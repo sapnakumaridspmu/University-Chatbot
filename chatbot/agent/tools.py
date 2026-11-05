@@ -1,6 +1,8 @@
 from langchain_core.tools import tool
 from langchain_tavily import TavilySearch
+from langchain_community.tools import DuckDuckGoSearchRun
 from pydantic import BaseModel, Field
+
 
 from config import TAVILY_API_KEY
 from db import queries
@@ -98,9 +100,12 @@ def query_faculty_data(
 
 # ── Tavily Web Search Tool ─────────────────────────────────────────────────────
 
+# ── Web Search Tools ───────────────────────────────────────────────────────────
+
 _TOOLS = [get_db_schema, query_faculty_data]
 
 if TAVILY_API_KEY:
+    # Use Tavily when API key is available
     tavily_tool = TavilySearch(
         max_results=4,
         name="tavily_search",
@@ -109,9 +114,24 @@ if TAVILY_API_KEY:
             "academic programs, rankings, news, or anything not available "
             "in the internal database."
         ),
+        api_key=TAVILY_API_KEY,
     )
-    _TOOLS.append(tavily_tool)
+
+    web_search_tool = tavily_tool
+    SEARCH_BACKEND = "tavily"
+
 else:
-    tavily_tool = None  # type: ignore[assignment]
+    # Use DuckDuckGo as a fallback
+    try:
+        web_search_tool = DuckDuckGoSearchRun()
+        SEARCH_BACKEND = "duckduckgo"
+
+    except Exception:
+        web_search_tool = None
+        SEARCH_BACKEND = "off"
+
+# Add web search tool only when available
+if web_search_tool is not None:
+    _TOOLS.append(web_search_tool)
 
 TOOLS = _TOOLS
