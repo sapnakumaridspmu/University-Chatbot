@@ -2,6 +2,7 @@ import asyncio
 import html
 import streamlit as st
 from agent import stream_response
+from agent.tools import SEARCH_BACKEND
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -318,8 +319,13 @@ with st.sidebar:
     tools_info = [
         ("🗄️", "Database Schema", "Inspects table structures"),
         ("👩‍🏫", "Faculty Query", "Name, dept, designation search"),
-        ("🌐", "Web Search", "Tavily — live university info"),
     ]
+    if SEARCH_BACKEND == "tavily":
+        tools_info.append(("🌐", "Web Search", "Tavily — live university info"))
+    elif SEARCH_BACKEND == "duckduckgo":
+        tools_info.append(("🌐", "Web Search", "DuckDuckGo — live university info"))
+    else:
+        st.warning("Web search is OFF (no TAVILY_API_KEY). Live info like the Vice Chancellor's name is unavailable.", icon="⚠️")
     for icon, name, desc in tools_info:
         st.markdown(f"""
         <div class="tool-card">
